@@ -1,0 +1,9 @@
+{
+  "name": "AFRICA OF HOPE",
+  "description": "A high-performance, offline-first PWA for AFRICA OF HOPE, featuring educational tools, payment integrations, and AI assistance.",
+  "requestFramePermissions": [
+    "camera",
+    "microphone",
+    "geolocation"
+  ]
+}

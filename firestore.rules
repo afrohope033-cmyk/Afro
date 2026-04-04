@@ -1,0 +1,93 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // ===============================================================
+    // Assumed Data Model
+    // ===============================================================
+    // Collection: users
+    // Fields: uid, email, displayName, photoURL, role (admin|instructor|student), createdAt
+    //
+    // Collection: classes
+    // Fields: id, title, description, instructorId, students (array), createdAt
+    //
+    // Collection: assessments
+    // Fields: id, classId, title, questions (array), dueDate
+    //
+    // Collection: submissions
+    // Fields: id, assessmentId, studentId, answers (array), submittedAt, grade
+    //
+    // Collection: payments
+    // Fields: id, userId, amount, currency, status (pending|completed|failed), method, timestamp
+
+    // ===============================================================
+    // Helper Functions
+    // ===============================================================
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    function isAdmin() {
+      return isAuthenticated() && (
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin' ||
+        (request.auth.token.email == "afrohope033@gmail.com" && request.auth.token.email_verified == true)
+      );
+    }
+
+    function isInstructor() {
+      return isAuthenticated() && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'instructor';
+    }
+
+    function isValidUser(data) {
+      return data.keys().hasAll(['uid', 'email', 'role']) &&
+             data.uid is string && data.email is string &&
+             data.role in ['admin', 'instructor', 'student'];
+    }
+
+    function isValidClass(data) {
+      return data.keys().hasAll(['title', 'instructorId']) &&
+             data.title is string && data.title.size() > 0 &&
+             data.instructorId is string;
+    }
+
+    // ===============================================================
+    // Rules
+    // ===============================================================
+
+    match /users/{userId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated() && isOwner(userId) && isValidUser(request.resource.data) && (request.resource.data.role == 'student' || isAdmin());
+      allow update: if isAuthenticated() && (isOwner(userId) || isAdmin()) && isValidUser(request.resource.data) && (request.resource.data.role == resource.data.role || isAdmin());
+    }
+
+    match /classes/{classId} {
+      allow read: if isAuthenticated();
+      allow create: if isAdmin() || isInstructor();
+      allow update, delete: if isAdmin() || (isInstructor() && resource.data.instructorId == request.auth.uid);
+    }
+
+    match /assessments/{assessmentId} {
+      allow read: if isAuthenticated();
+      allow create, update, delete: if isAdmin() || isInstructor();
+    }
+
+    match /submissions/{submissionId} {
+      allow read: if isAuthenticated() && (isOwner(resource.data.studentId) || isAdmin() || isInstructor());
+      allow create: if isAuthenticated() && isOwner(request.resource.data.studentId);
+      allow update: if isAdmin() || isInstructor();
+    }
+
+    match /payments/{paymentId} {
+      allow read: if isAuthenticated() && (isOwner(resource.data.userId) || isAdmin());
+      allow create: if isAuthenticated() && isOwner(request.resource.data.userId);
+      allow update: if isAdmin();
+    }
+
+    match /test/connection {
+      allow read: if true;
+    }
+  }
+}

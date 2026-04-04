@@ -1,0 +1,81 @@
+{
+  "entities": {
+    "UserProfile": {
+      "title": "UserProfile",
+      "description": "User profile information and roles.",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string", "description": "Unique user ID." },
+        "email": { "type": "string", "format": "email", "description": "User email address." },
+        "displayName": { "type": "string", "description": "User display name." },
+        "photoURL": { "type": "string", "description": "User profile photo URL." },
+        "role": { "type": "string", "enum": ["admin", "instructor", "student"], "description": "User role for RBAC." },
+        "createdAt": { "type": "string", "format": "date-time", "description": "Account creation timestamp." }
+      },
+      "required": ["uid", "email", "role"]
+    },
+    "Class": {
+      "title": "Class",
+      "description": "Educational class or course.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Class ID." },
+        "title": { "type": "string", "description": "Class title." },
+        "description": { "type": "string", "description": "Class description." },
+        "instructorId": { "type": "string", "description": "UID of the instructor." },
+        "students": { "type": "array", "items": { "type": "string" }, "description": "List of student UIDs." },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["title", "instructorId"]
+    },
+    "Assessment": {
+      "title": "Assessment",
+      "description": "Quiz or assignment.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "classId": { "type": "string" },
+        "title": { "type": "string" },
+        "questions": { "type": "array", "items": { "type": "object" } },
+        "dueDate": { "type": "string", "format": "date-time" }
+      },
+      "required": ["classId", "title", "questions"]
+    },
+    "Submission": {
+      "title": "Submission",
+      "description": "Student submission for an assessment.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "assessmentId": { "type": "string" },
+        "studentId": { "type": "string" },
+        "answers": { "type": "array" },
+        "submittedAt": { "type": "string", "format": "date-time" },
+        "grade": { "type": "number" }
+      },
+      "required": ["assessmentId", "studentId", "answers"]
+    },
+    "Payment": {
+      "title": "Payment",
+      "description": "Payment transaction record.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "userId": { "type": "string" },
+        "amount": { "type": "number" },
+        "currency": { "type": "string" },
+        "status": { "type": "string", "enum": ["pending", "completed", "failed"] },
+        "method": { "type": "string", "enum": ["MTN", "Orange", "Sendwave"] },
+        "timestamp": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "amount", "status"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": { "schema": "UserProfile", "description": "User profiles." },
+    "/classes/{classId}": { "schema": "Class", "description": "Class data." },
+    "/assessments/{assessmentId}": { "schema": "Assessment", "description": "Assessments." },
+    "/submissions/{submissionId}": { "schema": "Submission", "description": "Student submissions." },
+    "/payments/{paymentId}": { "schema": "Payment", "description": "Payment records." }
+  }
+}
